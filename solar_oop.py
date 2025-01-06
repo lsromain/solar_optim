@@ -82,14 +82,19 @@ class CETProperties:
 
 @dataclass
 class OptimizationMetrics:
-    import_from_grid: float  # kWh
-    export_to_grid: float    # kWh
-    self_consumption_rate: float  # %
-    total_cost: float  # €
-    average_cost_per_kwh: float  # €/kWh
-    cet_cost: float  # €
-    cet_solar_ratio: float  # %
-    cet_runtime: float  # hours
+    production_totale: float  # kWh
+    consommation_totale: float  # kWh
+    import_reseau: float  # kWh
+    export_reseau: float  # kWh
+    taux_autoconsommation: float  # %
+    cout_total: float  # €
+    cout_moyen_kwh: float  # €/kWh
+    cout_import: float  # €
+    revenu_export: float  # €
+    temps_fonctionnement_cet: float  # hours
+    cout_fonctionnement_cet: float  # €
+    cet_active: np.ndarray  # binary array
+    cet_solar_share: float  # %
 
 class OptimizationStrategy:
     def __init__(self, name: str):
@@ -103,22 +108,26 @@ class OptimizationStrategy:
 
     def calculate_metrics(self, timestamps: List[datetime], solar_production: np.ndarray,
                          base_consumption: np.ndarray, cet_consumption: np.ndarray) -> OptimizationMetrics:
-        ## Delta between 2 timestamps in hours
         dt_hours = (timestamps[1]-timestamps[0]).total_seconds() / 3600
         
-        # Calculate total consumption
+        # Calculate total consumption and production
         home_consumption = base_consumption + cet_consumption
         grid_exchanges = home_consumption + solar_production
+        total_solar_production = -np.sum(solar_production) * dt_hours
+        total_home_consumption = np.sum(home_consumption) * dt_hours
         
         # Calculate grid exchanges
-        grid_imports = np.maximum(grid_exchanges, 0)
-        grid_exports = np.maximum(-grid_exchanges, 0)
+        mask_export = grid_exchanges < 0
+        mask_import = grid_exchanges > 0
+        grid_exports = np.zeros_like(grid_exchanges)
+        grid_imports = np.zeros_like(grid_exchanges)
+        grid_exports[mask_export] = -grid_exchanges[mask_export]
+        grid_imports[mask_import] = grid_exchanges[mask_import]
         total_grid_imports = np.sum(grid_imports) * dt_hours
         total_grid_exports = np.sum(grid_exports) * dt_hours
         
-        # Calculate total production and consumption
-        total_solar_production = -np.sum(solar_production) * dt_hours
-        total_home_consumption = np.sum(home_consumption) * dt_hours
+        # Calculate consumption ratios
+        consumption_from_grid_ratio = grid_imports/home_consumption
         
         # Calculate self-consumption
         consumption_from_local_prod = total_solar_production - total_grid_exports
@@ -131,30 +140,31 @@ class OptimizationStrategy:
         mean_cost_per_kwh = total_cost / total_home_consumption if total_home_consumption > 0 else 0
         
         # Calculate CET specific metrics
-        consumption_from_grid_ratio = grid_imports / home_consumption
-        cet_consumption_cost = consumption_from_grid_ratio * self.import_tariff * cet_consumption * dt_hours
-        total_cet_cost = np.sum(cet_consumption_cost)
+        grid_kwh_price = consumption_from_grid_ratio * self.import_tariff
+        cet_consumption_cost = grid_kwh_price * cet_consumption * dt_hours
+        cet_total_cost = np.sum(cet_consumption_cost)
         
-        # Calculate CET solar ratio
-        cet_mask = cet_consumption > 0
-        if np.sum(cet_mask) > 0:
-            cet_solar_ratio = np.sum((1 - consumption_from_grid_ratio[cet_mask]) * 
-                                   cet_consumption[cet_mask]) / np.sum(cet_consumption[cet_mask]) * 100
-        else:
-            cet_solar_ratio = 0
-            
-        # Calculate CET runtime
-        cet_runtime = np.sum(cet_mask) * dt_hours
+        cet_active = np.zeros_like(timestamps)
+        cet_active[cet_consumption > 0] = 1
+        
+        cet_solar_ratio = np.sum((1-consumption_from_grid_ratio) * cet_consumption) / np.sum(cet_consumption) * 100 if np.sum(cet_consumption) > 0 else 0
+        
+        cet_runtime_hours = np.sum(cet_active) * dt_hours
         
         return OptimizationMetrics(
-            import_from_grid=total_grid_imports,
-            export_to_grid=total_grid_exports,
-            self_consumption_rate=self_consumption_rate,
-            total_cost=total_cost,
-            average_cost_per_kwh=mean_cost_per_kwh,
-            cet_cost=total_cet_cost,
-            cet_solar_ratio=cet_solar_ratio,
-            cet_runtime=cet_runtime
+            production_totale=total_solar_production,
+            consommation_totale=total_home_consumption,
+            import_reseau=total_grid_imports,
+            export_reseau=total_grid_exports,
+            taux_autoconsommation=self_consumption_rate,
+            cout_total=total_cost,
+            cout_moyen_kwh=mean_cost_per_kwh,
+            cout_import=import_cost,
+            revenu_export=export_revenue,
+            temps_fonctionnement_cet=cet_runtime_hours,
+            cout_fonctionnement_cet=cet_total_cost,
+            cet_active=cet_active,
+            cet_solar_share=cet_solar_ratio
         )
 
     def run_optimization(self, timestamps: List[datetime], solar_production: np.ndarray,
@@ -210,13 +220,11 @@ class SolarOnlyStrategy(OptimizationStrategy):
                     cet_consumption[i] = cet_properties.power
             else:
                 available_solar_power = -grid_exchange[i]
-                if (available_solar_power >= threshold_start and 
-                    state_duration >= cet_properties.min_duration):
+                if available_solar_power >= threshold_start and state_duration >= cet_properties.min_duration:
                     is_running = True
                     state_init_timestamp = timestamps[i]
                     cet_consumption[i] = cet_properties.power
-
-        # Complete remaining duration if needed
+        
         state_duration = timedelta(minutes=0)
         state_end_timestamp = timestamps[-1]
         i = 1
@@ -227,6 +235,99 @@ class SolarOnlyStrategy(OptimizationStrategy):
 
         return cet_consumption
 
+class MaximizeSolarStrategy(OptimizationStrategy):
+    def __init__(self, name: str):
+        super().__init__(name)
+
+    def optimize(self, timestamps: List[datetime], solar_production: np.ndarray,
+                base_consumption: np.ndarray, cet_properties: CETProperties) -> np.ndarray:
+        cet_consumption = np.zeros_like(timestamps)
+        grid_exchange = base_consumption + solar_production
+        
+        state_duration = timedelta(minutes=0)
+        total_running_duration = timedelta(minutes=0)
+        state_init_timestamp = timestamps[0]
+        is_running = False
+
+        for i in range(len(timestamps)):
+            state_duration = timestamps[i] - state_init_timestamp
+            power_from_grid_without_cet = grid_exchange[i]
+
+            if is_running:
+                if (total_running_duration + state_duration) >= cet_properties.max_duration:
+                    total_running_duration = cet_properties.max_duration
+                    break
+
+                if power_from_grid_without_cet > 0 and state_duration >= cet_properties.min_duration:
+                    total_running_duration += state_duration
+                    is_running = False
+                    state_init_timestamp = timestamps[i]
+                else:
+                    cet_consumption[i] = cet_properties.power
+            else:
+                available_solar_power = -power_from_grid_without_cet
+                if available_solar_power >= 0 and state_duration >= cet_properties.min_duration:
+                    is_running = True
+                    state_init_timestamp = timestamps[i]
+                    cet_consumption[i] = cet_properties.power
+
+        state_duration = timedelta(minutes=0)
+        state_end_timestamp = timestamps[-1]
+        i = 1
+        while (total_running_duration + state_duration) < cet_properties.max_duration:
+            cet_consumption[-i] = cet_properties.power
+            i += 1
+            state_duration = state_end_timestamp - timestamps[-(i)]
+
+        return cet_consumption
+    
+class OptimizationStrategy(OptimizationStrategy):
+    def __init__(self, name: str, threshold: float):
+        super().__init__(name)
+        self.threshold = threshold
+
+    def optimize(self, timestamps: List[datetime], solar_production: np.ndarray,
+                base_consumption: np.ndarray, cet_properties: CETProperties) -> np.ndarray:
+        cet_consumption = np.zeros_like(timestamps)
+        
+        state_duration = timedelta(minutes=0)
+        total_running_duration = timedelta(minutes=0)
+        state_init_timestamp = timestamps[0]
+        is_running = False
+
+        for i in range(len(timestamps)):
+            state_duration = timestamps[i] - state_init_timestamp
+            self_consumption_ratio_with_cet = abs(solar_production[i])/(base_consumption[i] + cet_properties.power)
+
+            if is_running:
+                if (total_running_duration + state_duration) >= cet_properties.max_duration:
+                    total_running_duration = cet_properties.max_duration
+                    break
+
+                if (self_consumption_ratio_with_cet <= self.threshold and 
+                    state_duration >= cet_properties.min_duration):
+                    total_running_duration += state_duration
+                    is_running = False
+                    state_init_timestamp = timestamps[i]
+                else:
+                    cet_consumption[i] = cet_properties.power
+            else:
+                if (self_consumption_ratio_with_cet >= self.threshold and 
+                    state_duration >= cet_properties.min_duration):
+                    is_running = True
+                    state_init_timestamp = timestamps[i]
+                    cet_consumption[i] = cet_properties.power
+
+        state_duration = timedelta(minutes=0)
+        state_end_timestamp = timestamps[-1]
+        i = 1
+        while (total_running_duration + state_duration) < cet_properties.max_duration:
+            cet_consumption[-i] = cet_properties.power
+            i += 1
+            state_duration = state_end_timestamp - timestamps[-(i)]
+
+        return cet_consumption
+    
 class SolarOptimizationVisualizer:
     @staticmethod
     def plot_strategy_results(timestamps: List[datetime], base_consumption: np.ndarray,
@@ -243,7 +344,7 @@ class SolarOptimizationVisualizer:
         ax.bar(timestamps, home_consumption, width, label='Consommation', color='#FF6B6B', alpha=0.7)
         ax.bar(timestamps, solar_production, width, label='Production solaire', color='#4ECB71', alpha=0.7)
         ax.plot(timestamps, grid_exchanges, 'b-', label='Échanges réseau', linewidth=2)
-        ax.plot(timestamps, (cet_consumption > 0).astype(float), 'r-', label='CET actif', linewidth=2)
+        ax.plot(timestamps, metrics.cet_active, 'r-', label='CET actif', linewidth=2)
         
         ax.set_xlabel('Heure')
         ax.set_ylabel('Puissance (kW)')
@@ -308,11 +409,17 @@ def main():
 
     # Create and run strategies
     strategies = [
-        ScheduledStrategy("Night Scheduling", [
+        ScheduledStrategy("Programmé la nuit", [
             {"start": datetime(2024, 1, 1, 0, 0),
              "end": datetime(2024, 1, 1, 2, 0)}
         ]),
-        SolarOnlyStrategy("Solar Only", threshold_start=1.1),
+        ScheduledStrategy("Programmé en journée", [
+            {"start": datetime(2024, 1, 1, 11, 0),
+             "end": datetime(2024, 1, 1, 15, 0)}
+        ]),
+        SolarOnlyStrategy("100% Solaire", threshold_start=1.1),
+        MaximizeSolarStrategy("Max. Solar."),
+        OptimizationStrategy("Optimiz", threshold=0.5)
     ]
 
     # Create figure for plotting
@@ -339,15 +446,18 @@ def main():
         results.append((strategy.name, metrics))
 
     # Print comparison of metrics
-    print("\nComparison of Strategies:")
+    print("\nComparaison des Stratégies:")
     print("-" * 80)
     for name, metrics in results:
-        print(f"\nStrategy: {name}")
-        print(f"Import from grid: {metrics.import_from_grid:.2f} kWh")
-        print(f"Self-consumption rate: {metrics.self_consumption_rate:.1f}%")
-        print(f"Total cost: {metrics.total_cost:.2f}€")
-        print(f"CET solar ratio: {metrics.cet_solar_ratio:.1f}%")
-        print(f"CET runtime: {metrics.cet_runtime:.1f} hours")
+        print(f"\nStratégie: {name}")
+        print(f"Import réseau: {metrics.import_reseau:.2f} kWh")
+        print(f"Export réseau: {metrics.export_reseau:.1f} kWh")
+        print(f"Taux autoconsommation: {metrics.taux_autoconsommation:.1f}%")
+        print(f"Coût total: {metrics.cout_total:.2f}€")
+        print(f"Coût moyen/kWh: {metrics.cout_moyen_kwh:.3f}€/kWh")
+        print(f"Coût CET: {metrics.cout_fonctionnement_cet:.2f}€")
+        print(f"CET solar ratio: {metrics.cet_solar_share:.1f}%")
+        print(f"Temps fonctionnement CET: {metrics.temps_fonctionnement_cet:.1f} heures")
 
     plt.show()
 
