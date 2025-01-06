@@ -21,8 +21,8 @@ class SolarProduction:
             t_normalized = (t[mask] - np.min(t[mask])) / (np.max(t[mask]) - np.min(t[mask]))
             t_peak = np.mean(t[mask])
             solar_production[mask] = solar_production[mask] + (
-                -peak.peak * np.sin(np.pi * t_normalized) * 
+                peak.peak * np.sin(np.pi * t_normalized) * 
                 np.exp(-((t[mask] - t_peak) ** 2) / 8)
             )
         
-        return -np.abs(solar_production)
+        return np.abs(solar_production)

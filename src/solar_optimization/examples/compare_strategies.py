@@ -68,7 +68,9 @@ def main():
     strategies = [
         ScheduledStrategy("Programmé la nuit", [
             {"start": datetime(2024, 1, 1, 0, 0),
-             "end": datetime(2024, 1, 1, 2, 0)}
+             "end": datetime(2024, 1, 1, 2, 0)},
+             {"start": datetime(2024, 1, 1, 22, 0),
+             "end": datetime(2024, 1, 2, 0, 0)}
         ]),
         ScheduledStrategy("Programmé en journée", [
             {"start": datetime(2024, 1, 1, 11, 0),
@@ -80,8 +82,9 @@ def main():
     ]
 
     # Create figure for plotting
-    fig = plt.figure(figsize=(15, len(strategies) * 4))
-    gs = plt.GridSpec(len(strategies), 1, hspace=0.4)
+    rows = len(strategies) * 3+1
+    fig = plt.figure(figsize=(15, rows))
+    gs = plt.GridSpec(len(strategies)+1, 1, hspace=1)
 
     results = []
     for idx, strategy in enumerate(strategies):
@@ -102,6 +105,70 @@ def main():
         # Store results for comparison
         results.append((strategy.name, metrics))
 
+    # Ajout d'un tableau comparatif des métriques
+    ax_table = fig.add_subplot(gs[5])
+    ax_table.axis('tight')
+    ax_table.axis('off')
+    
+    # Préparation des données pour le tableau
+    print(results[0][0])
+    print(results[0][1])
+    table_data = [
+        ['Métrique', 
+         f"{results[0][0]}",
+         f"{results[1][0]}",
+         f"{results[2][0]}",
+         f"{results[3][0]}",
+         f"{results[4][0]}"
+         ],
+        ['Import réseau (kWh)', 
+         f"{results[0][1].import_reseau:.2f}",
+         f"{results[1][1].import_reseau:.2f}",
+         f"{results[2][1].import_reseau:.2f}",
+         f"{results[3][1].import_reseau:.2f}",
+         f"{results[4][1].import_reseau:.2f}"],
+        ['Export réseau (kWh)', 
+         f"{results[0][1].export_reseau:.1f}",
+         f"{results[1][1].export_reseau:.1f}",
+         f"{results[2][1].export_reseau:.1f}",
+         f"{results[3][1].export_reseau:.1f}",
+         f"{results[4][1].export_reseau:.1f}"],
+        ['Taux autoconsommation (%)', 
+         f"{results[0][1].taux_autoconsommation:.2f}%",
+         f"{results[1][1].taux_autoconsommation:.2f}%",
+         f"{results[2][1].taux_autoconsommation:.2f}%",
+         f"{results[3][1].taux_autoconsommation:.2f}%",
+         f"{results[4][1].taux_autoconsommation:.2f}%"],
+        ['Coût total (€)', 
+         f"{results[0][1].cout_total:.2f}",
+         f"{results[1][1].cout_total:.2f}",
+         f"{results[2][1].cout_total:.2f}",
+         f"{results[3][1].cout_total:.2f}",
+         f"{results[4][1].cout_total:.2f}"],
+         ['Cout moyen/kWh (€/kWh)', 
+         f"{results[0][1].cout_moyen_kwh:.3f}",
+         f"{results[1][1].cout_moyen_kwh:.3f}",
+         f"{results[2][1].cout_moyen_kwh:.3f}",
+         f"{results[3][1].cout_moyen_kwh:.3f}",
+         f"{results[4][1].cout_moyen_kwh:.3f}"],
+         ['Cout Cet (€)', 
+         f"{results[0][1].cout_fonctionnement_cet:.2f}",
+         f"{results[1][1].cout_fonctionnement_cet:.2f}",
+         f"{results[2][1].cout_fonctionnement_cet:.2f}",
+         f"{results[3][1].cout_fonctionnement_cet:.2f}",
+         f"{results[4][1].cout_fonctionnement_cet:.2f}"],
+         ['CET solar ratio (%)', 
+         f"{results[0][1].cet_solar_share:.2f}%",
+         f"{results[1][1].cet_solar_share:.2f}%",
+         f"{results[2][1].cet_solar_share:.2f}%",
+         f"{results[3][1].cet_solar_share:.2f}%",
+         f"{results[4][1].cet_solar_share:.2f}%"]
+    ]
+    
+    table = ax_table.table(cellText=table_data, loc='center', cellLoc='center')
+    table.auto_set_font_size(False)
+    table.set_fontsize(9)
+    table.scale(1.2, 1.5)
     # Print comparison of metrics
     print("\nComparaison des Stratégies:")
     print("-" * 80)

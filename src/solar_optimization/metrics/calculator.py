@@ -15,8 +15,8 @@ class MetricsCalculator:
         
         # Calculate total consumption and production
         home_consumption = base_consumption + cet_consumption
-        grid_exchanges = home_consumption + solar_production
-        total_solar_production = -np.sum(solar_production) * dt_hours
+        grid_exchanges = home_consumption - solar_production
+        total_solar_production = np.sum(solar_production) * dt_hours
         total_home_consumption = np.sum(home_consumption) * dt_hours
         
         # Calculate grid exchanges

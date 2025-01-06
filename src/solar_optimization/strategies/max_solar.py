@@ -12,7 +12,7 @@ class MaximizeSolarStrategy(OptimizationStrategy):
     def optimize(self, timestamps: List[datetime], solar_production: np.ndarray,
                 base_consumption: np.ndarray, cet_properties: CETProperties) -> np.ndarray:
         cet_consumption = np.zeros_like(timestamps)
-        grid_exchange = base_consumption + solar_production
+        grid_exchange = base_consumption - solar_production
         
         state_duration = timedelta(minutes=0)
         total_running_duration = timedelta(minutes=0)

@@ -14,7 +14,7 @@ class SolarOnlyStrategy(OptimizationStrategy):
                 base_consumption: np.ndarray, cet_properties: CETProperties) -> np.ndarray:
         cet_consumption = np.zeros_like(timestamps)
         threshold_start = cet_properties.power * self.threshold_start
-        grid_exchange = base_consumption + solar_production
+        grid_exchange = base_consumption - solar_production
         
         state_duration = timedelta(minutes=0)
         total_running_duration = timedelta(minutes=0)
