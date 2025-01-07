@@ -1,17 +1,13 @@
-from dataclasses import dataclass
 from datetime import datetime, timedelta
 from typing import List
 
-@dataclass
-class TimeSeriesConfig:
-    start_time: datetime
-    end_time: datetime
-    time_delta: timedelta
 
-    def create_timestamps(self) -> List[datetime]:
+class TimeSeriesConfig:
+    @classmethod
+    def create_timestamps(self, start_time: datetime=datetime(2024, 1, 1, 0, 0) , end_time: datetime=datetime(2024, 1, 2, 0, 0),time_delta:timedelta=timedelta(minutes=5) ) -> List[datetime]:
         timestamps = []
-        current_time = self.start_time
-        while current_time <= self.end_time:
+        current_time = start_time
+        while current_time <= end_time:
             timestamps.append(current_time)
-            current_time += self.time_delta
+            current_time += time_delta
         return timestamps

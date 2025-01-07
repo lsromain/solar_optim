@@ -4,14 +4,15 @@ import numpy as np
 
 from .base import OptimizationStrategy
 from ..devices.cet import CETProperties
+from ..core.scenarios import Scenario
 
 class ScheduledStrategy(OptimizationStrategy):
     def __init__(self, name: str, schedules: List[Dict[str, datetime]]):
         super().__init__(name)
         self.schedules = schedules
 
-    def optimize(self, timestamps: List[datetime], solar_production: np.ndarray,
-                base_consumption: np.ndarray, cet_properties: CETProperties) -> np.ndarray:
+    def optimize(self, scenario:Scenario, cet_properties: CETProperties) -> np.ndarray:
+        timestamps = scenario.timestamps
         cet_consumption = np.zeros_like(timestamps)
         for schedule in self.schedules:
             cet_mask = [(t >= schedule["start"]) & (t < schedule["end"]) for t in timestamps]

@@ -3,14 +3,18 @@ from typing import List
 import numpy as np
 
 from .models import OptimizationMetrics
+from ..core.scenarios import Scenario
 
 class MetricsCalculator:
     def __init__(self):
         self.import_tariff = 0.25  # €/kWh
         self.export_tariff = 0.1269   # €/kWh
 
-    def run(self, timestamps: List[datetime], solar_production: np.ndarray,
-                         base_consumption: np.ndarray, cet_consumption: np.ndarray) -> OptimizationMetrics:
+    def run(self, scenario:Scenario, cet_consumption: np.ndarray) -> OptimizationMetrics:
+        timestamps = scenario.timestamps
+        base_consumption = scenario.consumption_data
+        solar_production = scenario.production_data
+        
         dt_hours = (timestamps[1]-timestamps[0]).total_seconds() / 3600
         
         # Calculate total consumption and production

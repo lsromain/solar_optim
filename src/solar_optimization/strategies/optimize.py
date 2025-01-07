@@ -4,14 +4,17 @@ import numpy as np
 
 from .base import OptimizationStrategy
 from ..devices.cet import CETProperties
+from ..core.scenarios import Scenario
 
 class OptimizationStrategy(OptimizationStrategy):
     def __init__(self, name: str, threshold: float):
         super().__init__(name)
         self.threshold = threshold
 
-    def optimize(self, timestamps: List[datetime], solar_production: np.ndarray,
-                base_consumption: np.ndarray, cet_properties: CETProperties) -> np.ndarray:
+    def optimize(self, scenario:Scenario, cet_properties: CETProperties) -> np.ndarray:
+        timestamps = scenario.timestamps
+        base_consumption = scenario.consumption_data
+        solar_production = scenario.production_data
         cet_consumption = np.zeros_like(timestamps)
         
         state_duration = timedelta(minutes=0)

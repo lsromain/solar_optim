@@ -4,14 +4,18 @@ import numpy as np
 
 from .base import OptimizationStrategy
 from ..devices.cet import CETProperties
+from ..core.scenarios import Scenario
 
 class SolarOnlyStrategy(OptimizationStrategy):
     def __init__(self, name: str, threshold_start: float):
         super().__init__(name)
         self.threshold_start = threshold_start
 
-    def optimize(self, timestamps: List[datetime], solar_production: np.ndarray,
-                base_consumption: np.ndarray, cet_properties: CETProperties) -> np.ndarray:
+    def optimize(self, scenario:Scenario, cet_properties: CETProperties) -> np.ndarray:
+        timestamps = scenario.timestamps
+        base_consumption = scenario.consumption_data
+        solar_production = scenario.production_data
+        
         cet_consumption = np.zeros_like(timestamps)
         threshold_start = cet_properties.power * self.threshold_start
         grid_exchange = base_consumption - solar_production

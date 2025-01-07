@@ -33,3 +33,12 @@ class BaseConsumption:
         base_consumption = savgol_filter(base_consumption, window_length=5, polyorder=3)
         
         return np.abs(base_consumption)
+    
+    def add_peak(self, peak:ConsumptionPeak):
+        pass
+
+    def remove_peak(self, name:str):
+        pass
+
+    def update_mean_base(self, mean_base:float):
+        pass

@@ -1,16 +1,19 @@
-from datetime import datetime, timedelta
-from typing import List
+from datetime import timedelta
 import numpy as np
 
 from .base import OptimizationStrategy
 from ..devices.cet import CETProperties
+from ..core.scenarios import Scenario
 
 class MaximizeSolarStrategy(OptimizationStrategy):
     def __init__(self, name: str):
         super().__init__(name)
 
-    def optimize(self, timestamps: List[datetime], solar_production: np.ndarray,
-                base_consumption: np.ndarray, cet_properties: CETProperties) -> np.ndarray:
+    def optimize(self, scenario:Scenario, cet_properties: CETProperties) -> np.ndarray:
+        timestamps = scenario.timestamps
+        base_consumption = scenario.consumption_data
+        solar_production = scenario.production_data
+
         cet_consumption = np.zeros_like(timestamps)
         grid_exchange = base_consumption - solar_production
         

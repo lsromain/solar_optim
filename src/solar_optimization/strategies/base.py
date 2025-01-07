@@ -1,11 +1,17 @@
 from abc import ABC, abstractmethod
-from datetime import datetime
-from typing import List, Tuple
+from typing import Tuple
+from dataclasses import dataclass
 import numpy as np
 
 from ..devices.cet import CETProperties
 from ..metrics.models import OptimizationMetrics
 from ..metrics.calculator import MetricsCalculator
+from ..core.scenarios import Scenario
+
+@dataclass
+class OptimizationResult():
+    cet_consumption: np.ndarray
+    metrics: OptimizationMetrics
 
 class OptimizationStrategy(ABC):
     def __init__(self, name: str):
@@ -13,18 +19,13 @@ class OptimizationStrategy(ABC):
         self.metrics_calculator = MetricsCalculator()
 
     @abstractmethod
-    def optimize(self, timestamps: List[datetime], 
-                solar_production: np.ndarray,
-                base_consumption: np.ndarray, 
+    def optimize(self, scenario:Scenario, 
                 cet_properties: CETProperties) -> np.ndarray:
         pass
 
-    def run_optimization(self, timestamps: List[datetime],
-                        solar_production: np.ndarray,
-                        base_consumption: np.ndarray,
-                        cet_properties: CETProperties) -> Tuple[np.ndarray, OptimizationMetrics]:
-        cet_consumption = self.optimize(timestamps, solar_production,
-                                      base_consumption, cet_properties)
-        metrics = self.metrics_calculator.run(timestamps, solar_production,
-                                                  base_consumption, cet_consumption)
-        return cet_consumption, metrics
+    def run_optimization(self, scenario:Scenario,
+                        cet_properties: CETProperties) -> OptimizationResult:
+        cet_consumption = self.optimize(scenario, cet_properties)
+        metrics = self.metrics_calculator.run(scenario, cet_consumption)
+        return OptimizationResult(cet_consumption, metrics)
+
