@@ -1,5 +1,4 @@
 from abc import ABC, abstractmethod
-from typing import Tuple
 from dataclasses import dataclass
 import numpy as np
 
