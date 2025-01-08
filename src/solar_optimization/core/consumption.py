@@ -1,6 +1,7 @@
 from dataclasses import dataclass
 from datetime import datetime, timedelta
 from typing import List
+from enum import Enum
 import numpy as np
 from scipy.signal import savgol_filter
 
@@ -42,3 +43,24 @@ class BaseConsumption:
 
     def update_mean_base(self, mean_base:float):
         pass
+
+class DefaultConsumptionScenario(Enum):
+    WEEK_DAY = 1
+    WEEKEND_DAY =2
+
+class DefaultBaseConsumption:
+    @classmethod
+    def generate(self, scenario:DefaultConsumptionScenario)->BaseConsumption:
+        if scenario == DefaultConsumptionScenario.WEEK_DAY:
+            return BaseConsumption(
+                0.3,
+                [ConsumptionPeak("morning_peak",     1.5,   datetime(2024, 1, 1, 7, 0),     datetime(2024, 1, 1, 7, 30)),
+                 ConsumptionPeak("evening_peak",     2,     datetime(2024, 1, 1, 19, 0),    datetime(2024, 1, 1, 19, 30))])
+        elif scenario == DefaultConsumptionScenario.WEEKEND_DAY:
+            return BaseConsumption(
+                0.8,
+                [ConsumptionPeak("morning_peak",     1.5,   datetime(2024, 1, 1, 10, 0),     datetime(2024, 1, 1, 10, 30)),
+                 ConsumptionPeak("Lunch",            2,     datetime(2024, 1, 1, 12, 0),    datetime(2024, 1, 1, 13, 0)),
+                 ConsumptionPeak("evening_peak",     2,     datetime(2024, 1, 1, 19, 0),    datetime(2024, 1, 1, 19, 30)),
+                 ConsumptionPeak("snack",            2,     datetime(2024, 1, 1, 16, 0),    datetime(2024, 1, 1, 16, 30)),
+                 ConsumptionPeak("Washing machine",  1.5,   datetime(2024, 1, 1, 10, 30),   datetime(2024, 1, 1, 11, 0))])

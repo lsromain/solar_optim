@@ -1,6 +1,5 @@
 from dataclasses import asdict, fields
 import matplotlib.pyplot as plt
-import numpy as np
 
 from ..strategies.base import OptimizationResult
 from ..metrics.models import OptimizationMetrics
@@ -8,7 +7,7 @@ from ..core.scenarios import Scenario
 
 class SolarOptimizationVisualizer:
     @staticmethod
-    def plot_strategy_results(scenario:Scenario, strategy_name, strategy_result:OptimizationResult,
+    def plot_strategy_result(scenario:Scenario, strategy_name, strategy_result:OptimizationResult,
                             ax: plt.Axes) -> None:
         """Plot results for a single strategy"""
         timestamps = scenario.timestamps
@@ -22,7 +21,8 @@ class SolarOptimizationVisualizer:
         grid_exchanges = home_consumption - solar_production
         
         time_delta = timestamps[1] - timestamps[0]
-        width = time_delta.total_seconds() / (3600 * 24)
+        dt_hours = (time_delta).total_seconds() / 3600
+        width = dt_hours / (24)
         
         ax.bar(timestamps, home_consumption, width, label='Consommation', color='#FF6B6B', alpha=0.7)
         ax.bar(timestamps, -solar_production, width, label='Production solaire', color='#4ECB71', alpha=0.7)
@@ -36,7 +36,7 @@ class SolarOptimizationVisualizer:
         ax.axhline(y=0, color='gray', linestyle='--', alpha=0.3)
         ax.legend(loc='upper right')
         ax.set_title(f'Stratégie: {strategy_name}')
-        ax.set_ylim(-3, 3)
+        #ax.set_ylim(-3, 3)
 
 
     @staticmethod
@@ -79,15 +79,19 @@ class SolarOptimizationVisualizer:
 
     @staticmethod
     def plot_all_results(scenario:Scenario, results:dict[str, OptimizationResult], metrics_to_display:list[str], strategies_to_display: list[str]=[]) -> None:
+        
+        if not strategies_to_display:
+            strategies_to_display = results.keys()
+
         rows = (len(strategies_to_display) + 1)*3
         fig = plt.figure(figsize=(15, rows))
         gs = plt.GridSpec(len(strategies_to_display)+1, 1, hspace=1)
         idx = 0
-        for name, result in results.items():    
+        for name, result in results.items():
             if name in strategies_to_display:
                 # Plot results for this strategy
                 ax = fig.add_subplot(gs[idx])
-                SolarOptimizationVisualizer.plot_strategy_results(scenario, name, result, ax)
+                SolarOptimizationVisualizer.plot_strategy_result(scenario, name, result, ax)
                 idx+=1
 
         ax_table = fig.add_subplot(gs[idx])
@@ -95,3 +99,31 @@ class SolarOptimizationVisualizer:
         ax_table.axis('off')
 
         SolarOptimizationVisualizer.plot_comparison_table(results, metrics_to_display, ax_table, strategies_to_display)
+
+
+class ScenarioDataVisualiser:
+    @staticmethod
+    def plot_scenario(scenario:Scenario):
+        timestamps = scenario.timestamps
+        base_consumption = scenario.consumption_data
+        solar_production = scenario.production_data
+
+        home_consumption = base_consumption
+        grid_exchanges = home_consumption - solar_production
+        
+        time_delta = timestamps[1] - timestamps[0]
+        width = time_delta.total_seconds() / (3600 * 24)
+        
+        fig = plt.figure(figsize=(10, 3))
+        ax = plt.axes()
+        ax.bar(timestamps, home_consumption, width, label='Consommation', color='#FF6B6B', alpha=0.7)
+        ax.bar(timestamps, -solar_production, width, label='Production solaire', color='#4ECB71', alpha=0.7)
+        ax.plot(timestamps, grid_exchanges, 'b-', label='Échanges réseau', linewidth=2)
+        ax
+        ax.set_xlabel('Heure')
+        ax.set_ylabel('Puissance (kW)')
+        ax.xaxis.set_major_formatter(plt.matplotlib.dates.DateFormatter('%H:%M'))
+        ax.axhline(y=0, color='gray', linestyle='--', alpha=0.3)
+        ax.legend(loc='upper right')
+        ax.set_title('Scenario')
+        ax.set_ylim(-3, 3)
