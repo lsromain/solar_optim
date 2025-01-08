@@ -10,24 +10,21 @@ class SolarOptimizationVisualizer:
     def plot_strategy_result(scenario:Scenario, strategy_name, strategy_result:OptimizationResult,
                             ax: plt.Axes) -> None:
         """Plot results for a single strategy"""
-        timestamps = scenario.timestamps
-        base_consumption = scenario.consumption_data
-        solar_production = scenario.production_data
 
         cet_consumption=strategy_result.cet_consumption
         metrics=strategy_result.metrics
         
-        home_consumption = base_consumption + cet_consumption
-        grid_exchanges = home_consumption - solar_production
+        home_consumption = scenario.consumption_data + cet_consumption
+        grid_exchanges = home_consumption - scenario.production_data
         
-        time_delta = timestamps[1] - timestamps[0]
+        time_delta = scenario.timestamps[1] - scenario.timestamps[0]
         dt_hours = (time_delta).total_seconds() / 3600
         width = dt_hours / (24)
         
-        ax.bar(timestamps, home_consumption, width, label='Consommation', color='#FF6B6B', alpha=0.7)
-        ax.bar(timestamps, -solar_production, width, label='Production solaire', color='#4ECB71', alpha=0.7)
-        ax.plot(timestamps, grid_exchanges, 'b-', label='Échanges réseau', linewidth=2)
-        ax.plot(timestamps, metrics.cet_active, 'r-', label='CET actif', linewidth=2)
+        ax.bar(scenario.timestamps, home_consumption, width, label='Consommation', color='#FF6B6B', alpha=0.7)
+        ax.bar(scenario.timestamps, -scenario.production_data, width, label='Production solaire', color='#4ECB71', alpha=0.7)
+        ax.plot(scenario.timestamps, grid_exchanges, 'b-', label='Échanges réseau', linewidth=2)
+        ax.plot(scenario.timestamps, metrics.cet_active, 'r-', label='CET actif', linewidth=2)
         
         ax.set_xlabel('Heure')
         ax.set_ylabel('Puissance (kW)')
@@ -104,21 +101,18 @@ class SolarOptimizationVisualizer:
 class ScenarioDataVisualiser:
     @staticmethod
     def plot_scenario(scenario:Scenario):
-        timestamps = scenario.timestamps
-        base_consumption = scenario.consumption_data
-        solar_production = scenario.production_data
 
-        home_consumption = base_consumption
-        grid_exchanges = home_consumption - solar_production
+        home_consumption = scenario.consumption_data
+        grid_exchanges = home_consumption - scenario.production_data
         
-        time_delta = timestamps[1] - timestamps[0]
+        time_delta = scenario.timestamps[1] - scenario.timestamps[0]
         width = time_delta.total_seconds() / (3600 * 24)
         
         fig = plt.figure(figsize=(10, 3))
         ax = plt.axes()
-        ax.bar(timestamps, home_consumption, width, label='Consommation', color='#FF6B6B', alpha=0.7)
-        ax.bar(timestamps, -solar_production, width, label='Production solaire', color='#4ECB71', alpha=0.7)
-        ax.plot(timestamps, grid_exchanges, 'b-', label='Échanges réseau', linewidth=2)
+        ax.bar(scenario.timestamps, home_consumption, width, label='Consommation', color='#FF6B6B', alpha=0.7)
+        ax.bar(scenario.timestamps, -scenario.production_data, width, label='Production solaire', color='#4ECB71', alpha=0.7)
+        ax.plot(scenario.timestamps, grid_exchanges, 'b-', label='Échanges réseau', linewidth=2)
         ax
         ax.set_xlabel('Heure')
         ax.set_ylabel('Puissance (kW)')

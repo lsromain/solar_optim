@@ -1,5 +1,3 @@
-from datetime import datetime
-from typing import List
 import numpy as np
 
 from .models import OptimizationMetrics
@@ -11,16 +9,13 @@ class MetricsCalculator:
         self.export_tariff = 0.1269   # €/kWh
 
     def run(self, scenario:Scenario, cet_consumption: np.ndarray) -> OptimizationMetrics:
-        timestamps = scenario.timestamps
-        base_consumption = scenario.consumption_data
-        solar_production = scenario.production_data
         
-        dt_hours = (timestamps[1]-timestamps[0]).total_seconds() / 3600
+        dt_hours = (scenario.timestamps[1]-scenario.timestamps[0]).total_seconds() / 3600
         
         # Calculate total consumption and production
-        home_consumption = base_consumption + cet_consumption
-        grid_exchanges = home_consumption - solar_production
-        total_solar_production = np.sum(solar_production) * dt_hours
+        home_consumption = scenario.consumption_data + cet_consumption
+        grid_exchanges = home_consumption - scenario.production_data
+        total_solar_production = np.sum(scenario.production_data) * dt_hours
         total_home_consumption = np.sum(home_consumption) * dt_hours
         
         # Calculate grid exchanges
@@ -51,7 +46,7 @@ class MetricsCalculator:
         cet_consumption_cost = grid_kwh_price * cet_consumption * dt_hours
         cet_total_cost = np.sum(cet_consumption_cost)
         
-        cet_active = np.zeros_like(timestamps)
+        cet_active = np.zeros_like(scenario.timestamps)
         cet_active[cet_consumption > 0] = 1
         
         cet_solar_ratio = np.sum((1-consumption_from_grid_ratio) * cet_consumption) / np.sum(cet_consumption) * 100 if np.sum(cet_consumption) > 0 else 0

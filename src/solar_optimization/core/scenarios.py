@@ -1,7 +1,6 @@
 from dataclasses import dataclass
 import numpy as np
 
-from .timeseries import TimeSeriesConfig
 from .consumption import BaseConsumption
 from .production import SolarProduction
 
