@@ -32,6 +32,7 @@ class SolarOnlyStrategy(OptimizationStrategy):
                 power_from_grid = grid_exchange[i] + cet_properties.power
                 
                 if (total_running_duration + state_duration) >= cet_properties.max_duration:
+                    total_running_duration = cet_properties.max_duration
                     break
 
                 if power_from_grid > 0 and state_duration >= cet_properties.min_duration:
