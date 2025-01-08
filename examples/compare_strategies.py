@@ -1,38 +1,25 @@
 from datetime import datetime, timedelta
 import matplotlib.pyplot as plt
 
-from solar_optimization.core import TimeSeriesConfig, BaseConsumption, ConsumptionPeak, SolarProduction, SolarProductionPeak, Scenario, ScenarioInputs
+from solar_optimization.core import *#TimeSeriesConfig, BaseConsumption, ConsumptionPeak, SolarProduction, SolarProductionPeak, Scenario, ScenarioInputs
 from solar_optimization.devices.cet import CETProperties
-from solar_optimization.strategies import ScheduledStrategy, SolarOnlyStrategy, MaximizeSolarStrategy, OptimizationStrategy
-from solar_optimization.visualization.plotter import SolarOptimizationVisualizer
+from solar_optimization.strategies import *#ScheduledStrategy, SolarOnlyStrategy, MaximizeSolarStrategy, OptimizationStrategy
+from solar_optimization.visualization.plotter import SolarOptimizationVisualizer, ScenarioDataVisualiser
 
 
 def main():
     ## Configurations
     # Timestamps
-    timestamps = TimeSeriesConfig.create_timestamps(time_delta=timedelta(minutes=5))
-
-    # Base consumption setup
-    consumption_peaks = [
-        ConsumptionPeak("morning_peak",     2,  datetime(2024, 1, 1, 7, 0),     datetime(2024, 1, 1, 7, 30)),
-        ConsumptionPeak("evening_peak",     2,  datetime(2024, 1, 1, 19, 0),    datetime(2024, 1, 1, 19, 30)),
-        ConsumptionPeak("Lunch",            1.5,datetime(2024, 1, 1, 13, 0),    datetime(2024, 1, 1, 13, 30)),
-        ConsumptionPeak("Washing machine",  1.5,datetime(2024, 1, 1, 10, 30),   datetime(2024, 1, 1, 11, 0))
-    ]
-
-    # Solar production setup
-    solar_peaks = [
-        SolarProductionPeak(1.4,  datetime(2024, 1, 1, 9, 0),  datetime(2024, 1, 1, 11, 30)),
-        SolarProductionPeak(2,    datetime(2024, 1, 1, 11, 0), datetime(2024, 1, 1, 17, 0))
-    ]
-
-
+    time_resolution = 5 #minutes
+    timestamps = TimeSeriesConfig.create_timestamps(time_delta=timedelta(minutes=time_resolution))
 
     ## Data generation
-    scenario = Scenario(ScenarioInputs(timestamps, BaseConsumption(mean_base=0.5, peaks=consumption_peaks), SolarProduction(peaks=solar_peaks)))
+    scenario = Scenario(ScenarioInputs(timestamps, 
+                                   DefaultBaseConsumption.generate(DefaultConsumptionScenario.WEEKEND_DAY), 
+                                   DefaultSolarProduction.generate(DefaultProductionScenario.SUMMER_SUNNY_ALL_DAY)))
 
+    ScenarioDataVisualiser.plot_scenario(scenario)
     
-
     ## Strategies configuration
     strategies = [
         ScheduledStrategy(
@@ -46,7 +33,7 @@ def main():
              "end": datetime(2024, 1, 1, 15, 0)}
         ]),
         SolarOnlyStrategy("100% Solar", threshold_start=1.1),
-        MaximizeSolarStrategy("Max. Solar."),
+        MaximizeSolarStrategy("Max. Solar"),
         OptimizationStrategy("Optimiz", threshold=0.5)
     ]
 
@@ -57,7 +44,7 @@ def main():
 
     # Evaluate strategies and store results
     results = {}
-    for idx, strategy in enumerate(strategies):
+    for strategy in strategies:
         # Run optimization for each strategy
         results[strategy.name] = strategy.run_optimization(scenario, cet_properties)
 
@@ -65,11 +52,11 @@ def main():
 
     ## Display results
     # Create figure for plotting
-    strategies_to_display = ["Night scheduling", "100% Solar", "Max. Solar.","Optimiz"]
-    metrics_to_display = ['import_reseau','export_reseau', 'taux_autoconsommation','cout_total','cout_moyen_kwh', 'cout_fonctionnement_cet','cet_solar_share']
+    strategies_to_display = ["Night scheduling","Day scheduling", "100% Solar", "Max. Solar", "Optimiz"]
+    metrics_to_display = ['import_reseau','export_reseau', 'production_totale','taux_autoconsommation','cout_total','cout_moyen_kwh', 'cout_fonctionnement_cet','cet_solar_share']
 
     SolarOptimizationVisualizer.plot_all_results(scenario, results, metrics_to_display, strategies_to_display)
-
+    
     plt.show()
 
 if __name__ == "__main__":
