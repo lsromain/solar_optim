@@ -2,10 +2,10 @@ from abc import ABC, abstractmethod
 from dataclasses import dataclass
 import numpy as np
 
-from ..devices.cet import CETProperties
-from ..metrics.models import OptimizationMetrics
-from ..metrics.calculator import MetricsCalculator
-from ..core.scenarios import Scenario
+from solar_optimization.devices.cet import CETProperties
+from solar_optimization.metrics.models import OptimizationMetrics
+from solar_optimization.metrics.calculator import MetricsCalculator
+from solar_optimization.core.scenarios import Scenario
 
 @dataclass
 class OptimizationResult():

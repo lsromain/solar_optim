@@ -1,7 +1,7 @@
 import numpy as np
 
-from .models import OptimizationMetrics
-from ..core.scenarios import Scenario
+from solar_optimization.metrics.models import OptimizationMetrics
+from solar_optimization.core.scenarios import Scenario
 
 class MetricsCalculator:
     def __init__(self):

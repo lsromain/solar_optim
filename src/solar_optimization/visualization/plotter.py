@@ -1,9 +1,9 @@
 from dataclasses import asdict, fields
 import matplotlib.pyplot as plt
 
-from ..strategies.base import OptimizationResult
-from ..metrics.models import OptimizationMetrics
-from ..core.scenarios import Scenario
+from solar_optimization.strategies.base import OptimizationResult
+from solar_optimization.metrics.models import OptimizationMetrics
+from solar_optimization.core.scenarios import Scenario
 
 class SolarOptimizationVisualizer:
     @staticmethod

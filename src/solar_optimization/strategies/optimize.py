@@ -1,9 +1,9 @@
 from datetime import timedelta
 import numpy as np
 
-from .base import OptimizationStrategy
-from ..devices.cet import CETProperties
-from ..core.scenarios import Scenario
+from solar_optimization.strategies.base import OptimizationStrategy
+from solar_optimization.devices.cet import CETProperties
+from solar_optimization.core.scenarios import Scenario
 
 class OptimizationStrategy(OptimizationStrategy):
     """

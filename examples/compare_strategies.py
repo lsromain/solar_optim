@@ -1,10 +1,10 @@
 from datetime import datetime, timedelta
 import matplotlib.pyplot as plt
 
-from solar_optimization.core import *#TimeSeriesConfig, BaseConsumption, ConsumptionPeak, SolarProduction, SolarProductionPeak, Scenario, ScenarioInputs
+from solar_optimization.core import *
 from solar_optimization.devices.cet import CETProperties
-from solar_optimization.strategies import *#ScheduledStrategy, SolarOnlyStrategy, MaximizeSolarStrategy, OptimizationStrategy
-from solar_optimization.visualization.plotter import SolarOptimizationVisualizer, ScenarioDataVisualiser
+from solar_optimization.strategies import *
+from solar_optimization.visualization.plotter import *
 
 
 def main():

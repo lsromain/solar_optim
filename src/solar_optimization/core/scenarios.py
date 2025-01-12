@@ -1,8 +1,8 @@
 from dataclasses import dataclass
 import numpy as np
 
-from .consumption import BaseConsumption
-from .production import SolarProduction
+from solar_optimization.core.consumption import BaseConsumption
+from solar_optimization.core.production import SolarProduction
 
 @dataclass
 class ScenarioInputs:
