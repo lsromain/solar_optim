@@ -4,9 +4,9 @@ from solar_optimization.metrics.models import OptimizationMetrics
 from solar_optimization.core.scenarios import Scenario
 
 class MetricsCalculator:
-    def __init__(self):
-        self.import_tariff = 0.25  # €/kWh
-        self.export_tariff = 0.1269   # €/kWh
+    def __init__(self, import_tarif:float=0.25, export_tarif:float=0.1269):
+        self.import_tariff = import_tarif  # €/kWh
+        self.export_tariff = export_tarif  # €/kWh
 
     def run(self, scenario:Scenario, cet_consumption: np.ndarray) -> OptimizationMetrics:
         
@@ -53,18 +53,24 @@ class MetricsCalculator:
         
         cet_runtime_hours = np.sum(cet_active) * dt_hours
         
+        cumulated_cost = np.cumsum(grid_kwh_price*home_consumption*dt_hours - grid_exports*dt_hours*self.export_tariff)
+
         return OptimizationMetrics(
-            production_totale=total_solar_production,
-            consommation_totale=total_home_consumption,
-            import_reseau=total_grid_imports,
-            export_reseau=total_grid_exports,
-            taux_autoconsommation=self_consumption_rate,
-            cout_total=total_cost,
-            cout_moyen_kwh=mean_cost_per_kwh,
-            cout_import=import_cost,
-            revenu_export=export_revenue,
-            temps_fonctionnement_cet=cet_runtime_hours,
-            cout_fonctionnement_cet=cet_total_cost,
-            cet_active=cet_active,
+            total_production=total_solar_production,
+            total_consumption=total_home_consumption,
+            total_grid_imports=total_grid_imports,
+            total_grid_exports=total_grid_exports,
+            total_self_consumption=self_consumption_rate,
+            total_cost=total_cost,
+            tarif_import = self.import_tariff,
+            tarif_export = self.export_tariff,
+            total_import_cost=import_cost,
+            total_revenue_export=export_revenue,
+            mean_cost_per_kwh=mean_cost_per_kwh,
+            from_grid_ratio = consumption_from_grid_ratio,
+            cost = cumulated_cost,
+            cet_runtime_hours=cet_runtime_hours,
+            cet_total_cost=cet_total_cost,
+            cet_is_active=cet_active,
             cet_solar_share=cet_solar_ratio
         )

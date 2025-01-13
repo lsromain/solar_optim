@@ -15,7 +15,7 @@ def main():
 
     ## Data generation
     scenario = Scenario(ScenarioInputs(timestamps, 
-                                   DefaultBaseConsumption.generate(DefaultConsumptionScenario.WEEKEND_DAY), 
+                                   DefaultBaseConsumption.generate(DefaultConsumptionScenario.WEEK_DAY), 
                                    DefaultSolarProduction.generate(DefaultProductionScenario.SUMMER_SUNNY_ALL_DAY)))
 
     ScenarioDataVisualiser.plot_scenario(scenario)
@@ -53,9 +53,9 @@ def main():
     ## Display results
     # Create figure for plotting
     strategies_to_display = ["Night scheduling","Day scheduling", "100% Solar", "Max. Solar", "Optimiz"]
-    metrics_to_display = ['import_reseau','export_reseau', 'production_totale','taux_autoconsommation','cout_total','cout_moyen_kwh', 'cout_fonctionnement_cet','cet_solar_share']
+    metrics_to_display = ['total_grid_imports','total_grid_exports', 'total_production','total_self_consumption','total_cost','mean_cost_per_kwh', 'cet_total_cost','cet_solar_share']
 
-    SolarOptimizationVisualizer.plot_all_results(scenario, results, metrics_to_display, strategies_to_display)
+    SolarOptimizationVisualizer.plot_all_results(scenario, results, metrics_to_display, strategies_to_display, display_type=VisualizationType.COST)
     
     plt.show()
 

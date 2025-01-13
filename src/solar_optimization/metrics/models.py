@@ -3,16 +3,20 @@ import numpy as np
 
 @dataclass
 class OptimizationMetrics:
-    production_totale: float  # kWh
-    consommation_totale: float  # kWh
-    import_reseau: float  # kWh
-    export_reseau: float  # kWh
-    taux_autoconsommation: float  # %
-    cout_total: float  # €
-    cout_moyen_kwh: float  # €/kWh
-    cout_import: float  # €
-    revenu_export: float  # €
-    temps_fonctionnement_cet: float  # hours
-    cout_fonctionnement_cet: float  # €
-    cet_active: np.ndarray  # binary array
+    total_production: float  # kWh
+    total_consumption: float  # kWh
+    total_grid_imports: float  # kWh
+    total_grid_exports: float  # kWh
+    total_self_consumption: float  # %
+    total_cost: float  # €
+    tarif_import: float # €
+    tarif_export: float # €
+    total_import_cost: float  # €
+    total_revenue_export: float  # €
+    mean_cost_per_kwh: float  # €/kWh
+    from_grid_ratio: np.ndarray  # % float array
+    cost: float # € float array
+    cet_runtime_hours: float  # hours
+    cet_total_cost: float  # €
+    cet_is_active: np.ndarray  # binary array
     cet_solar_share: float  # %
